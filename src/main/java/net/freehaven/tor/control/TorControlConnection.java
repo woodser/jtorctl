@@ -857,11 +857,11 @@ public class TorControlConnection implements TorControlCommands {
      * @throws IOException
      */
     public CreateHiddenServiceResult createHiddenService(Integer port) throws IOException {
-        return createHiddenService(port, -1, "NEW:BEST");
+        return createHiddenService(port, -1, "NEW:BEST", null, null);
     }
 
     public CreateHiddenServiceResult createHiddenService(Integer virtPort, Integer targetPort) throws IOException {
-        return createHiddenService(virtPort, targetPort, "NEW:BEST");
+        return createHiddenService(virtPort, targetPort, "NEW:BEST", null, null);
     }
 
     /**
@@ -872,17 +872,32 @@ public class TorControlConnection implements TorControlCommands {
 
 
     public CreateHiddenServiceResult createHiddenService(Integer port, String private_key) throws IOException {
-        return createHiddenService(port, -1, private_key);
+        return createHiddenService(port, -1, private_key, null, null);
     }
 
-    public CreateHiddenServiceResult createHiddenService(Integer virtPort, Integer targetPort, String private_key)
-            throws IOException {
+    public CreateHiddenServiceResult createHiddenService(
+        Integer virtPort,
+        Integer targetPort,
+        String private_key,
+        List<String> flags,
+        Integer maxStreams) throws IOException {
 
         // assemble port string
         String port = virtPort.toString();
 
         if (targetPort > 0)
             port += "," + targetPort;
+
+        StringBuilder cmd = new StringBuilder();
+        cmd.append("ADD_ONION " + getEncodePrivateKey(private_key) + " Port=" + port + "\r\n");
+
+        if (flags != null && !flags.isEmpty()) {
+            cmd.append(" Flags=").append(String.join(",", flags));
+        }
+
+        if (maxStreams != null) {
+            cmd.append(" MaxStreams=").append(maxStreams);
+        }
 
         List<ReplyLine> result = sendAndWaitForResponse(
                     "ADD_ONION " + getEncodePrivateKey(private_key) + " Port=" + port + "\r\n", null);
